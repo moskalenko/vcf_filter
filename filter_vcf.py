@@ -5,7 +5,7 @@ Author: Oleksandr Moskalenko <om@hpc.ufl.edu>
 Version: 0.1
 Date: 2014-08-01
 """
-import os, sys, operator, logging
+import os, sys, operator, logging, gzip, vcf, argparse
 
 __version="0.1"
 
@@ -34,7 +34,6 @@ def read_snp_list(args):
     return snps
 
 def filter_vcf_files(args, vcf_files, snp_list):
-    import vcf
     for input_file in vcf_files:
         if args.verbose:
             print "Processing file {0}".format(input_file)
@@ -49,7 +48,11 @@ def filter_vcf_files(args, vcf_files, snp_list):
             outpath = outfile_name
         if args.verbose:
             print "Writing output to {0}".format(outpath)
-        v_reader = vcf.Reader(open(input_file,'r'))
+        if file_basename.endswith('gz'):
+            input_fh = open(input_file, 'rb')
+        else:
+            input_fh = open(input_file,'r')
+        v_reader = vcf.Reader(input_fh)
         output_fh = open(outpath, 'w')
         v_writer = vcf.Writer(output_fh, v_reader)
         for record in v_reader:
@@ -61,7 +64,6 @@ def filter_vcf_files(args, vcf_files, snp_list):
                 v_writer.write_record(record)
 
 if __name__=='__main__':
-    import sys
     logger = logging.getLogger(__name__)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
@@ -72,7 +74,6 @@ if __name__=='__main__':
     if sys.version_info < (2,7,0):
         print ("You need python 2.7 or later to run this script.")
         sys.exit(1)
-    import argparse
     args = get_arguments()
     input_types = ['gz', 'vcf']
     try:
